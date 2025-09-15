@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tic Tac Toe - Two Player with Score</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+  body {
+    font-family: 'Orbitron', sans-serif;
+    display: flex;
+    height: 100vh;
+    margin: 0;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #0f0f2d, #000020 80%);
+    color: #00ffcc;
+  }
+
+  .game {
+    text-align: center;
+    background: #12122b;
+    padding: 30px 50px 60px;
+    border-radius: 15px;
+    box-shadow: 0 0 25px #00ffcc, 0 0 50px #00ffcc inset;
+    position: relative;
+    width: 410px;
+  }
+
+  h1 {
+    text-shadow: 0 0 10px #00ffcc;
+    margin-bottom: 10px;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 110px);
+    grid-template-rows: repeat(3, 110px);
+    gap: 10px;
+    margin: 20px auto;
+    position: relative;
+  }
+
+  .cell {
+    background: #1e1e3f;
+    border: 2px solid #005f5f;
+    font-size: 60px;
+    line-height: 110px;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 0 8px #00ffcc;
+    transition: background 0.3s, box-shadow 0.3s, color 0.3s;
+    z-index: 2;
+  }
+
+  .cell:hover {
+    background: #00ffcc;
+    color: #12122b;
+    box-shadow: 0 0 15px #00ffcc, 0 0 25px #00ffcc inset;
+  }
+
+  .cell.x {
+    color: #00ffcc;
+    text-shadow: 0 0 8px #00ffcc;
+  }
+
+  .cell.o {
+    color: #ff4d4d;
+    text-shadow: 0 0 8px #ff4d4d;
+  }
+
+  .info {
+    font-size: 22px;
+    margin-top: 10px;
+    text-shadow: 0 0 8px #00ffcc;
+    min-height: 28px;
+  }
+
+  button {
+    font-size: 16px;
+    padding: 8px 16px;
+    cursor: pointer;
+    background: #00ffcc;
+    border: none;
+    border-radius: 8px;
+    color: #12122b;
+    box-shadow: 0 0 10px #00ffcc;
+    transition: background 0.3s, box-shadow 0.3s;
+    font-weight: bold;
+    margin-top: 15px;
+    position: relative;
+    z-index: 4;
+    margin-right: 10px;
+  }
+
+  button:hover {
+    background: #00ccaa;
+    box-shadow: 0 0 20px #00ccaa inset;
+  }
+
+  /* Blink animation */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Blinking effect for winning cells */
+  .blink {
+    animation: blink 1s infinite;
+  }
+
+  /* Scoreboard */
+  .scoreboard {
+    font-size: 18px;
+    margin-top: 15px;
+    text-align: center;
+    color: #00ffcc;
+  }
+
+  .scoreboard span {
+    margin: 0 10px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+  <div class="game">
+    <h1>Tic Tac Toe</h1>
+    <div class="board" id="board">
+      <div class="cell" data-index="0"></div>
+      <div class="cell" data-index="1"></div>
+      <div class="cell" data-index="2"></div>
+      <div class="cell" data-index="3"></div>
+      <div class="cell" data-index="4"></div>
+      <div class="cell" data-index="5"></div>
+      <div class="cell" data-index="6"></div>
+      <div class="cell" data-index="7"></div>
+      <div class="cell" data-index="8"></div>
+    </div>
+    <div class="info" id="info">Turn: X</div>
+
+    <div class="scoreboard" id="scoreboard">
+      <span>X Wins: <span id="xWins">0</span></span>
+      <span>Draws: <span id="draws">0</span></span>
+      <span>O Wins: <span id="oWins">0</span></span>
+    </div>
+
+    <button id="nextGameBtn">Next Game</button>
+    <button id="restartSessionBtn">Restart Session</button>
+  </div>
+
+<script>
+  const board = document.getElementById('board');
+  const info = document.getElementById('info');
+  const restartBtn = document.getElementById('nextGameBtn');
+  const restartSessionBtn = document.getElementById('restartSessionBtn');
+  const xWinsDisplay = document.getElementById('xWins');
+  const oWinsDisplay = document.getElementById('oWins');
+  const drawsDisplay = document.getElementById('draws');
+
+  let cells;
+  let currentTurn = 'X';
+  let gameState = ['', '', '', '', '', '', '', '', ''];
+  let gameActive = true;
+  let winningCells = [];
+
+  let xWins = 0;
+  let oWins = 0;
+  let draws = 0;
+
+  const winningConditions = [
+    [0, 1, 2], 
+    [3, 4, 5], 
+    [6, 7, 8], 
+    [0, 3, 6], 
+    [1, 4, 7], 
+    [2, 5, 8], 
+    [0, 4, 8], 
+    [2, 4, 6]  
+  ];
+
+  function handleCellClick(e) {
+    if (!gameActive) return; 
+
+    const clickedCell = e.target;
+    const clickedIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+    if (gameState[clickedIndex] !== '') {
+      return;
+    }
+
+    gameState[clickedIndex] = currentTurn;
+    clickedCell.textContent = currentTurn;
+
+    clickedCell.classList.remove('x', 'o');
+    clickedCell.classList.add(currentTurn.toLowerCase());
+
+    if (checkWin()) {
+      info.textContent = `Player ${currentTurn} has won!`;
+      gameActive = false;
+      updateScore(currentTurn);
+      blinkWinningCells();
+      return;
+    }
+
+    if (checkDraw()) {
+      info.textContent = `Game ended in a draw!`;
+      gameActive = false;
+      updateScore('draw');
+      return;
+    }
+
+    currentTurn = currentTurn === 'X' ? 'O' : 'X';
+    info.textContent = `Turn: ${currentTurn}`;
+  }
+
+  function updateScore(winner) {
+    if (winner === 'X') {
+      xWins++;
+      xWinsDisplay.textContent = xWins;
+    } else if (winner === 'O') {
+      oWins++;
+      oWinsDisplay.textContent = oWins;
+    } else if (winner === 'draw') {
+      draws++;
+      drawsDisplay.textContent = draws;
+    }
+  }
+
+  function checkWin() {
+    winningCells = [];
+    for (let i = 0; i < winningConditions.length; i++) {
+      const [a, b, c] = winningConditions[i];
+      if (
+        gameState[a] !== '' &&
+        gameState[a] === gameState[b] &&
+        gameState[a] === gameState[c]
+      ) {
+        winningCells = [a, b, c];
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function checkDraw() {
+    return gameState.every(cell => cell !== '');
+  }
+
+  function nextGame() {
+    gameState = ['', '', '', '', '', '', '', '', ''];
+    gameActive = true;
+    currentTurn = 'X';
+    info.textContent = `Turn: ${currentTurn}`;
+    cells.forEach(cell => {
+      cell.textContent = '';
+      cell.classList.remove('x', 'o', 'blink');
+    });
+  }
+
+  function blinkWinningCells() {
+    winningCells.forEach(index => {
+      const cell = cells[index];
+      cell.classList.add('blink');
+    });
+  }
+
+  function restartSession() {
+    nextGame();
+    xWins = 0;
+    oWins = 0;
+    draws = 0;
+    xWinsDisplay.textContent = '0';
+    oWinsDisplay.textContent = '0';
+    drawsDisplay.textContent = '0';
+  }
+
+  function init() {
+    cells = Array.from(document.querySelectorAll('.cell'));
+    cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+    restartBtn.addEventListener('click', nextGame);
+    restartSessionBtn.addEventListener('click', restartSession);
+  }
+
+  init();
+</script>
+</body>
+</html>
